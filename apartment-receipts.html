@@ -1,0 +1,599 @@
+<title>קבלות הדירה</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&family=Secular+One&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one narrow column, mobile first. Receipts look like thermal-paper slips; everything else is quiet. */
+:root{
+  --paper:#EEF1EC; --card:#FFFFFF; --slip:#FBFBF7; --ink:#1A2520; --muted:#5F6E66; --line:#D6DDD5;
+  --accent:#1D6A54; --accent-soft:#DCEDE5; --accent-ink:#FFFFFF;
+  --warn:#A9501A; --warn-soft:#FBEADC; --good:#1E7A3E; --bad:#B3261E;
+  --m0:#D9480F; --m1:#1864AB; --m2:#862E9C; --m3:#2B8A3E; --m4:#C2255C; --m5:#8F6B00;
+  --display:"Secular One","Rubik",system-ui,sans-serif;
+  --body:"Rubik",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#121614; --card:#1A201D; --slip:#1F2622; --ink:#E4EAE6; --muted:#97A59D; --line:#2E3733;
+  --accent:#5EC4A1; --accent-soft:#1C3A30; --accent-ink:#0B1712;
+  --warn:#F0A46C; --warn-soft:#3A2618; --good:#6DD395; --bad:#F28880;
+  --m0:#FF8A5B; --m1:#6FB2F2; --m2:#D08BE6; --m3:#73D18A; --m4:#F27BA6; --m5:#E3C04D; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#121614; --card:#1A201D; --slip:#1F2622; --ink:#E4EAE6; --muted:#97A59D; --line:#2E3733;
+  --accent:#5EC4A1; --accent-soft:#1C3A30; --accent-ink:#0B1712;
+  --warn:#F0A46C; --warn-soft:#3A2618; --good:#6DD395; --bad:#F28880;
+  --m0:#FF8A5B; --m1:#6FB2F2; --m2:#D08BE6; --m3:#73D18A; --m4:#F27BA6; --m5:#E3C04D; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);padding-block:14px 10px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:12px}
+h1{font-family:var(--display);font-weight:400;font-size:26px;margin:0;line-height:1.1;text-wrap:balance}
+h2{font-family:var(--display);font-weight:400;font-size:21px;margin:0;text-wrap:balance}
+h3{font-size:15px;font-weight:700;margin:0}
+.tabs{display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:3px}
+.tabs button{flex:1;border:0;background:transparent;color:var(--muted);font:500 14px var(--body);padding:7px 6px;border-radius:7px;cursor:pointer}
+.tabs button[aria-current="true"]{background:var(--accent);color:var(--accent-ink)}
+main{display:flex;flex-direction:column;gap:16px;padding-top:16px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate;white-space:nowrap}
+button{font-family:var(--body)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);font:500 14px var(--body);padding:9px 14px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.big{width:100%;padding:14px;font-size:16px;font-weight:700}
+.btn.danger{color:var(--bad)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.note{background:var(--warn-soft);color:var(--warn);border-radius:9px;padding:9px 12px;font-size:14px}
+.note.info{background:var(--accent-soft);color:var(--accent)}
+
+/* who am I */
+.me-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:4px 10px 4px 4px;font:500 13px var(--body);color:var(--ink);cursor:pointer}
+.av{--c:var(--m0);width:26px;height:26px;border-radius:50%;display:inline-grid;place-items:center;font:700 13px var(--body);background:var(--c);color:#fff;flex:none}
+:root[data-theme="dark"] .av{color:#111}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .av{color:#111}}
+.chip,.av{--c:var(--m0)}
+.c0{--c:var(--m0)}.c1{--c:var(--m1)}.c2{--c:var(--m2)}.c3{--c:var(--m3)}.c4{--c:var(--m4)}.c5{--c:var(--m5)}
+
+/* summary */
+.hero{display:flex;flex-direction:column;gap:4px}
+.hero .amount{font-family:var(--mono);font-size:30px;line-height:1.1}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+
+/* receipt list */
+.rlist{display:flex;flex-direction:column;gap:10px}
+.rcard{display:grid;grid-template-columns:1fr auto;gap:2px 12px;text-align:start;width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;color:var(--ink);font:inherit}
+.rcard:hover{border-color:var(--muted)}
+.rcard .t{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rcard .meta{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted)}
+.tag{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:500;background:var(--accent-soft);color:var(--accent)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+
+/* the slip */
+.slip{background:var(--slip);border:1px solid var(--line);border-radius:4px;padding:16px 14px 18px;position:relative;
+  -webkit-mask:radial-gradient(circle 5px at 50% 100%,#0000 98%,#000) 0 0/14px 100% repeat-x;mask:radial-gradient(circle 5px at 50% 100%,#0000 98%,#000) 0 0/14px 100% repeat-x;padding-bottom:22px}
+.slip-head{text-align:center;display:flex;flex-direction:column;gap:2px;padding-bottom:10px;border-bottom:1px dashed var(--line)}
+.slip-head .store{font-family:var(--display);font-size:22px}
+.items{list-style:none;margin:0;padding:0}
+.item{padding:10px 0;border-bottom:1px dashed var(--line);display:flex;flex-direction:column;gap:7px}
+.item .l1{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.item .name{min-width:0;overflow-wrap:anywhere}
+.item .qty{color:var(--muted);font-size:13px}
+.claims{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:3px 10px 3px 4px;font:500 13px var(--body);cursor:pointer}
+.chip .dot{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--c);display:inline-grid;place-items:center;font-size:11px;font-weight:700;color:var(--c)}
+.chip[aria-pressed="true"]{border-color:var(--c);color:var(--ink);background:color-mix(in srgb,var(--c) 12%,transparent)}
+.chip[aria-pressed="true"] .dot{background:var(--c);color:var(--slip)}
+.chip.all{padding:3px 10px}
+.share{font-size:12px;color:var(--muted)}
+.item.unclaimed .name::after{content:"לא סומן";margin-inline-start:8px;font-size:11px;color:var(--warn);background:var(--warn-soft);border-radius:999px;padding:1px 7px;vertical-align:middle}
+.totals{display:flex;flex-direction:column;gap:4px;padding-top:10px}
+.totals .spread{font-size:14px}
+.totals .grand{font-weight:700;font-size:16px}
+
+/* editor */
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:13px;color:var(--muted)}
+input[type=text],input[type=number],input[type=date],select{font:15px var(--body);color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.erow{display:grid;grid-template-columns:1fr 64px 96px 36px;gap:6px;align-items:center}
+.erow input{padding:7px 8px}
+.erow .x{border:0;background:transparent;color:var(--muted);font-size:20px;cursor:pointer;border-radius:6px;height:36px}
+.erow .x:hover{color:var(--bad)}
+.ehead{font-size:12px;color:var(--muted)}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:20px 14px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;cursor:pointer;background:var(--card)}
+.drop.over{border-color:var(--accent)}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.thumbs img{width:64px;height:84px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.status{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.spin{width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp 0.9s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+
+/* balances */
+.bal{display:flex;flex-direction:column;gap:10px}
+.balrow{display:grid;grid-template-columns:minmax(80px,auto) 1fr 84px;gap:10px;align-items:center}
+.bar{height:10px;border-radius:5px;background:var(--line);position:relative;overflow:hidden}
+.bar i{position:absolute;top:0;bottom:0;border-radius:5px}
+.bar i.p{background:var(--good);inset-inline-start:50%}
+.bar i.n{background:var(--bad);inset-inline-end:50%}
+.bar::after{content:"";position:absolute;top:-2px;bottom:-2px;left:50%;width:1px;background:var(--muted)}
+.xfer{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}
+.xfer:last-child{border-bottom:0}
+.who{display:inline-flex;align-items:center;gap:6px}
+.members-edit{display:flex;flex-direction:column;gap:8px}
+.mrow{display:grid;grid-template-columns:auto 1fr 36px;gap:8px;align-items:center}
+.toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:10px;font-size:14px;z-index:20;max-width:calc(100% - 32px)}
+.empty{text-align:center;padding:28px 12px;display:flex;flex-direction:column;gap:8px;align-items:center}
+@media (max-width:420px){.erow{grid-template-columns:1fr 52px 84px 30px}.grid2{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap" dir="rtl" lang="he">
+  <header class="top">
+    <div class="brand">
+      <h1>קבלות הדירה</h1>
+      <span id="mePill"></span>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="ניווט">
+      <button data-tab="list">קבלות</button>
+      <button data-tab="balances">מי חייב למי</button>
+      <button data-tab="settings">הגדרות</button>
+    </nav>
+  </header>
+  <main id="app">
+    <div class="panel"><div class="status"><span class="spin"></span>טוען את הקבלות של הדירה…</div></div>
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+"use strict";
+const LS_ME = "apt-receipts-me";
+const S = {
+  db:null, sample:null, imgLimits:null, members:[], receipts:[], payments:[],
+  got:{house:false, receipts:false, payments:false}, failed:false, readOnly:false,
+  me: lsGet(LS_ME), tab:"list", view:"list", openId:null, draft:null, confirmDel:null,
+  scan:{files:[], urls:[], busy:false, ctl:null, msg:""}, editingMembers:null
+};
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}
+
+const app = document.getElementById("app");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const r2 = n => Math.round((Number(n)||0)*100)/100;
+const money = n => { const v=r2(n); return `<span class="num">${v<0?"-":""}₪${Math.abs(v).toFixed(2)}</span>`; };
+const uid = () => Math.random().toString(36).slice(2,9);
+const today = () => new Date().toISOString().slice(0,10);
+const fmtDate = d => { if(!d) return ""; const p=String(d).split("-"); return p.length===3?`${p[2]}.${p[1]}.${p[0].slice(2)}`:esc(d); };
+
+function member(id){ return S.members.find(m=>m.id===id); }
+function mName(id){ return member(id)?.name || "מישהו"; }
+function av(id, size){ const m=member(id); const ci=m?m.color%6:0; const s=size?`style="width:${size}px;height:${size}px;font-size:${Math.round(size/2)}px"`:""; return `<span class="av c${ci}" ${s} aria-hidden="true">${esc((m?.name||"?").trim().charAt(0))}</span>`; }
+
+let toastT;
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,3200); }
+
+/* ---------- money math ---------- */
+function claimantsOf(r, itemId){
+  const c = (r.claims||{})[itemId] || {};
+  return S.members.map(m=>m.id).filter(id=>c[id]===true);
+}
+function receiptStats(r){
+  let assigned=0, unassigned=0, unCount=0; const owe={};
+  for(const it of r.items||[]){
+    const who = claimantsOf(r,it.id); const p = Number(it.price)||0;
+    if(!who.length){ unassigned+=p; unCount++; continue; }
+    assigned+=p; for(const id of who) owe[id]=(owe[id]||0)+p/who.length;
+  }
+  const total=(r.items||[]).reduce((a,it)=>a+(Number(it.price)||0),0);
+  const touched = S.me ? (r.items||[]).some(it=>((r.claims||{})[it.id]||{})[S.me]===true) : true;
+  return {assigned, unassigned, unCount, owe, total, touched};
+}
+function balances(){
+  const net={}; S.members.forEach(m=>net[m.id]=0);
+  let unassigned=0;
+  for(const r of S.receipts){
+    const st=receiptStats(r); unassigned+=st.unassigned;
+    if(r.payer in net) net[r.payer]+=st.assigned;
+    for(const id in st.owe) if(id in net) net[id]-=st.owe[id];
+  }
+  for(const p of S.payments){
+    if(p.from in net) net[p.from]+=Number(p.amount)||0;
+    if(p.to in net) net[p.to]-=Number(p.amount)||0;
+  }
+  return {net, unassigned};
+}
+function settle(net){
+  const deb=[], cred=[];
+  for(const id in net){ const v=r2(net[id]); if(v<-0.009) deb.push({id,v:-v}); else if(v>0.009) cred.push({id,v}); }
+  deb.sort((a,b)=>b.v-a.v); cred.sort((a,b)=>b.v-a.v);
+  const out=[]; let i=0,j=0;
+  while(i<deb.length&&j<cred.length){
+    const a=Math.min(deb[i].v,cred[j].v);
+    if(a>0.009) out.push({from:deb[i].id,to:cred[j].id,amount:r2(a)});
+    deb[i].v-=a; cred[j].v-=a;
+    if(deb[i].v<0.01) i++; if(cred[j].v<0.01) j++;
+  }
+  return out;
+}
+
+/* ---------- db writes ---------- */
+async function write(fn, okMsg){
+  if(!S.db){ toast("אין חיבור לנתונים המשותפים"); return false; }
+  try{ await fn(); if(okMsg) toast(okMsg); return true; }
+  catch(e){
+    if(e && e.code==="invalid_argument"){ S.readOnly=true; render(); toast("אין לך הרשאת עריכה. צריך שבעל/ת העמוד ישתף/תשתף אותך כעורך/ת."); }
+    else if(e && e.code==="quota_exceeded") toast("נגמר המקום לנתונים. מחקו קבלות ישנות.");
+    else toast("השמירה נכשלה. נסו שוב בעוד רגע.");
+    return false;
+  }
+}
+
+/* ---------- rendering ---------- */
+function render(){
+  document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-current", String(b.dataset.tab===S.tab)));
+  document.getElementById("tabs").hidden = !S.members.length;
+  const mp=document.getElementById("mePill");
+  mp.innerHTML = S.me && member(S.me) ? `<button class="me-pill" data-act="whoami" title="החלפת משתמש">${av(S.me)}${esc(mName(S.me))}</button>` : "";
+
+  if(S.failed && !S.db){ app.innerHTML = `<div class="panel empty"><h2>אין גישה לנתונים</h2><p class="muted">פתחו את העמוד ב-claude.ai כשאתם מחוברים לחשבון. העמוד שומר את הקבלות במקום משותף לכל הדירה.</p></div>`; return; }
+  if(!S.got.house){ app.innerHTML = `<div class="panel"><div class="status"><span class="spin"></span>${S.slow?"הנתונים מתעכבים. בודק שוב…":"טוען את הקבלות של הדירה…"}</div></div>`; return; }
+  if(!S.members.length && S.view!=="members"){ S.view="members"; S.editingMembers=[{id:"m"+uid(),name:"",color:0},{id:"m"+uid(),name:"",color:1},{id:"m"+uid(),name:"",color:2},{id:"m"+uid(),name:"",color:3}]; }
+  if(S.view!=="members" && S.members.length && (!S.me || !member(S.me))) return renderWho();
+
+  const ro = S.readOnly ? `<div class="note">אפשר לצפות אבל לא לערוך. כדי לסמן פריטים, בעל/ת העמוד צריך/ה לשתף אותך עם הרשאת עריכה.</div>` : "";
+  let html="";
+  if(S.view==="members") html=renderMembers();
+  else if(S.view==="draft") html=renderDraft();
+  else if(S.view==="receipt") html=renderReceipt();
+  else if(S.tab==="balances") html=renderBalances();
+  else if(S.tab==="settings") html=renderSettings();
+  else html=renderList();
+  app.innerHTML = ro + html;
+  if(S.view==="draft") bindDraft();
+}
+
+function renderWho(){
+  app.innerHTML = `<div class="panel"><h2>מי את/ה בדירה?</h2><p class="muted small">הבחירה נשמרת רק בדפדפן הזה, כדי שנדע מה לסמן כשלך.</p>
+  <div class="row">${S.members.map(m=>`<button class="btn" data-act="setme" data-id="${esc(m.id)}">${av(m.id)}${esc(m.name)}</button>`).join("")}</div></div>`;
+}
+
+function renderList(){
+  const {net, unassigned}=balances();
+  const mine = r2(net[S.me]||0);
+  const pending = S.receipts.filter(r=>!receiptStats(r).touched).length;
+  let h = `<section class="panel hero">
+    <span class="muted small">היתרה שלך, ${esc(mName(S.me))}</span>
+    <span class="amount ${mine>0.009?"pos":mine<-0.009?"neg":""}">${money(Math.abs(mine))}</span>
+    <span class="small">${mine>0.009?"מגיע לך מהשותפות":mine<-0.009?"את/ה חייב/ת לשותפות":"הכול מאוזן"}${unassigned>0.009?` · <span class="muted">${money(unassigned)} עוד לא סומנו</span>`:""}</span>
+    ${pending?`<span class="tag warn" style="align-self:flex-start">${pending===1?"קבלה אחת שעוד לא סימנת בה":pending+" קבלות שעוד לא סימנת בהן"}</span>`:""}
+  </section>
+  <button class="btn primary big" data-act="newscan" ${S.readOnly?"disabled":""}>סריקת קבלה חדשה</button>`;
+  if(!S.receipts.length){
+    h += `<div class="panel empty"><h3>עוד אין קבלות</h3><p class="muted small">צלמו קבלה מהסופר. Claude יקרא את הפריטים, ואז כל אחד מסמן במה הוא השתתף.</p></div>`;
+  } else {
+    h += `<div class="rlist">` + S.receipts.map(r=>{
+      const st=receiptStats(r); const myShare=st.owe[S.me]||0;
+      return `<button class="rcard" data-act="open" data-id="${esc(r.id)}">
+        <span class="t">${esc(r.store||"קבלה")}</span><span>${money(st.total)}</span>
+        <span class="meta"><span>${fmtDate(r.date)}</span><span class="who">${av(r.payer,18)}שילם/ה ${esc(mName(r.payer))}</span>
+        ${st.unCount?`<span class="tag warn">${st.unCount} לא סומנו</span>`:`<span class="tag">הכול סומן</span>`}
+        ${!st.touched?`<span class="tag warn">עוד לא סימנת</span>`:myShare>0?`<span>החלק שלך ${money(myShare)}</span>`:""}</span>
+      </button>`;}).join("") + `</div>`;
+  }
+  return h;
+}
+
+function chip(id, on, extra){ const m=member(id); return `<button class="chip c${(m?.color||0)%6}" aria-pressed="${on}" ${extra}><span class="dot">${esc((m?.name||"?").charAt(0))}</span>${esc(m?.name||"")}</button>`; }
+
+function renderReceipt(){
+  const r=S.receipts.find(x=>x.id===S.openId);
+  if(!r){ S.view="list"; return renderList(); }
+  const st=receiptStats(r);
+  const dis = S.readOnly?"disabled":"";
+  let h = `<div class="spread"><button class="btn ghost" data-act="back">→ חזרה</button>
+    <div class="row"><button class="btn" data-act="edit" ${dis}>עריכת פריטים</button></div></div>
+  <div class="note info small">סמנו את עצמכם על כל מה שהשתתפתם בו. פריט עם כמה שותפים מתחלק שווה בשווה ביניהם.</div>
+  <article class="slip">
+    <div class="slip-head"><span class="store">${esc(r.store||"קבלה")}</span>
+      <span class="muted small">${fmtDate(r.date)}</span>
+      <label class="small row" style="justify-content:center">שילם/ה:
+        <select id="payerSel" style="width:auto" ${dis}>${S.members.map(m=>`<option value="${esc(m.id)}" ${m.id===r.payer?"selected":""}>${esc(m.name)}</option>`).join("")}</select></label>
+    </div>
+    <ul class="items">` + (r.items||[]).map(it=>{
+      const who=claimantsOf(r,it.id); const allOn = who.length===S.members.length;
+      return `<li class="item ${who.length?"":"unclaimed"}">
+        <div class="l1"><span class="name">${esc(it.name)}${Number(it.qty)>1?` <span class="qty">×${esc(it.qty)}</span>`:""}</span>${money(it.price)}</div>
+        <div class="claims">${S.members.map(m=>chip(m.id, who.includes(m.id), `data-act="claim" data-item="${esc(it.id)}" data-m="${esc(m.id)}" ${dis}`)).join("")}
+          <button class="chip all" aria-pressed="${allOn}" data-act="claimall" data-item="${esc(it.id)}" ${dis}>כולם</button></div>
+        ${who.length>1?`<span class="share">${money((Number(it.price)||0)/who.length)} לכל אחד</span>`:""}
+      </li>`;}).join("") + `</ul>
+    <div class="totals">
+      <div class="spread grand"><span>סה״כ פריטים</span>${money(st.total)}</div>
+      ${r.total!=null && Math.abs(r2(r.total)-r2(st.total))>0.05?`<div class="spread small"><span class="muted">סה״כ שמודפס בקבלה</span>${money(r.total)}</div>`:""}
+      ${S.members.map(m=>`<div class="spread"><span class="who">${av(m.id,20)}${esc(m.name)}</span>${money(st.owe[m.id]||0)}</div>`).join("")}
+      ${st.unCount?`<div class="spread small" style="color:var(--warn)"><span>לא סומן (${st.unCount})</span>${money(st.unassigned)}</div>`:""}
+    </div>
+  </article>`;
+  if(r.total!=null && Math.abs(r2(r.total)-r2(st.total))>0.05) h+=`<div class="note small">סכום הפריטים שונה מהסה״כ שמודפס בקבלה ב-${money(Math.abs(r.total-st.total))}. כדאי לבדוק בעריכת פריטים שלא חסר או מיותר משהו.</div>`;
+  if(st.unCount) h+=`<button class="btn" data-act="splitrest" ${dis}>לחלק את ${st.unCount} הפריטים שלא סומנו בין כולם</button>`;
+  h += S.confirmDel===r.id
+    ? `<div class="panel"><span>למחוק את הקבלה הזאת? הסימונים של כולם יימחקו.</span><div class="row"><button class="btn danger" data-act="delyes">מחיקה</button><button class="btn" data-act="delno">ביטול</button></div></div>`
+    : `<button class="btn ghost danger" data-act="del" ${dis}>מחיקת הקבלה</button>`;
+  return h;
+}
+
+function renderBalances(){
+  const {net, unassigned}=balances();
+  const max=Math.max(1,...Object.values(net).map(v=>Math.abs(v)));
+  const xs=settle(net);
+  let h=`<section class="panel"><h2>יתרות</h2><div class="bal">`+S.members.map(m=>{
+    const v=r2(net[m.id]||0); const w=Math.min(50,Math.abs(v)/max*50);
+    return `<div class="balrow"><span class="who">${av(m.id)}${esc(m.name)}</span>
+      <span class="bar" aria-hidden="true">${v>0?`<i class="p" style="width:${w}%"></i>`:v<0?`<i class="n" style="width:${w}%"></i>`:""}</span>
+      <span class="${v>0.009?"pos":v<-0.009?"neg":"muted"}">${v>0.009?"+":""}${money(v)}</span></div>`;}).join("")+`</div>
+    <p class="muted small" style="margin:0">פלוס: מגיע לו/ה כסף. מינוס: חייב/ת. כל אחד משלם רק על מה שסימן.</p>
+    ${unassigned>0.009?`<div class="note small">${money(unassigned)} בפריטים שעוד לא סומנו לא נכנסים לחישוב.</div>`:""}
+  </section>
+  <section class="panel"><h2>העברות כדי להתאזן</h2>`;
+  h += xs.length ? xs.map(x=>`<div class="xfer"><span class="who">${av(x.from,22)}${esc(mName(x.from))} ← ${money(x.amount)} ← ${av(x.to,22)}${esc(mName(x.to))}</span>
+    <button class="btn" data-act="paid" data-from="${esc(x.from)}" data-to="${esc(x.to)}" data-amount="${x.amount}" ${S.readOnly?"disabled":""}>שולם</button></div>`).join("")
+    : `<p class="muted" style="margin:0">אף אחד לא חייב כלום כרגע.</p>`;
+  h+=`</section>`;
+  if(S.payments.length){
+    h+=`<section class="panel"><h3>תשלומים שנרשמו</h3>`+[...S.payments].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).map(p=>`<div class="xfer"><span class="small">${fmtDate(p.date)} · ${esc(mName(p.from))} העביר/ה ל${esc(mName(p.to))} ${money(p.amount)}</span>
+      <button class="btn ghost danger small" data-act="unpay" data-id="${esc(p.id)}" ${S.readOnly?"disabled":""}>ביטול</button></div>`).join("")+`</section>`;
+  }
+  return h;
+}
+
+function renderSettings(){
+  return `<section class="panel"><h2>השותפים בדירה</h2>
+    <div class="row">${S.members.map(m=>`<span class="who">${av(m.id)}${esc(m.name)}</span>`).join("")}</div>
+    <div class="row"><button class="btn" data-act="editmembers" ${S.readOnly?"disabled":""}>עריכת שותפים</button><button class="btn" data-act="whoami">אני לא ${esc(mName(S.me))}</button></div></section>
+  <section class="panel"><h2>איך משתפים עם הדירה</h2>
+    <p style="margin:0">בתפריט השיתוף של העמוד, הזמינו כל שותפה לפי כתובת המייל שלה עם הרשאת <b>Editor</b>. כל אחת צריכה חשבון claude.ai. בלי הרשאת עריכה אפשר רק לצפות.</p>
+    <p class="muted small" style="margin:0">קריאת הקבלה נעשית על ידי Claude בחשבון של מי שסורק/ת, ובפעם הראשונה תופיע בקשת אישור.</p></section>`;
+}
+
+function renderMembers(){
+  const list=S.editingMembers||[];
+  const first=!S.members.length;
+  return `<section class="panel"><h2>${first?"ברוכים הבאים! מי גר בדירה?":"עריכת שותפים"}</h2>
+    ${first?`<p class="muted small" style="margin:0">רשמו את השמות של כל מי שחולק בקניות. אפשר לשנות אחר כך.</p>`:""}
+    <div class="members-edit">${list.map((m,i)=>`<div class="mrow"><span class="av c${m.color%6}">${esc((m.name||"?").charAt(0))}</span>
+      <input type="text" id="mname-${esc(m.id)}" data-mi="${i}" value="${esc(m.name)}" placeholder="שם" maxlength="24">
+      <button class="btn ghost" data-act="mdel" data-i="${i}" aria-label="הסרה" ${list.length<=2?"disabled":""}>✕</button></div>`).join("")}</div>
+    <div class="row"><button class="btn" data-act="madd" ${list.length>=6?"disabled":""}>הוספת שותף/ה</button></div>
+    ${!first?`<p class="muted small" style="margin:0">הסרת שותף/ה מוחקת גם את הסימונים שלו/ה מהחישוב.</p>`:""}
+    <div class="row"><button class="btn primary" data-act="msave">שמירה</button>${!first?`<button class="btn" data-act="mcancel">ביטול</button>`:""}</div></section>`;
+}
+
+/* ---------- draft (scan / edit) ---------- */
+function renderDraft(){
+  const d=S.draft; const sc=S.scan;
+  const sum=d.items.reduce((a,it)=>a+(Number(it.price)||0),0);
+  let h=`<div class="spread"><button class="btn ghost" data-act="cancelDraft">→ ביטול</button><h2>${d.editId?"עריכת קבלה":"קבלה חדשה"}</h2></div>`;
+  if(!d.editId){
+    const canImg=!!(S.sample && S.imgLimits);
+    h+=`<section class="panel">
+      ${canImg?`<label class="drop" id="drop" for="fileIn"><b>צילום או העלאה של הקבלה</b><span class="muted small">קבלה ארוכה? אפשר לצלם בכמה חלקים, מלמעלה למטה.</span>
+        <div class="thumbs">${sc.urls.map(u=>`<img src="${u}" alt="">`).join("")}</div></label>
+        <input type="file" id="fileIn" accept="image/*" multiple hidden>
+        <div class="row"><button class="btn primary" data-act="read" ${!sc.files.length||sc.busy?"disabled":""}>קריאת הקבלה</button>
+        ${sc.busy?`<button class="btn" data-act="stop">עצירה</button>`:""}${sc.files.length&&!sc.busy?`<button class="btn ghost" data-act="clearimg">ניקוי תמונות</button>`:""}</div>
+        ${sc.busy?`<div class="status"><span class="spin"></span>${esc(sc.msg||"Claude קורא את הקבלה… זה יכול לקחת עד דקה")}</div>`:sc.msg?`<div class="note small">${esc(sc.msg)}</div>`:""}`
+      :`<div class="note small">קריאה אוטומטית של קבלות לא זמינה כאן. אפשר להזין את הפריטים ידנית.</div>`}
+    </section>`;
+  }
+  h+=`<section class="panel">
+    <div class="grid2"><div class="field"><label for="dStore">חנות</label><input type="text" id="dStore" value="${esc(d.store)}" placeholder="למשל שופרסל"></div>
+    <div class="field"><label for="dDate">תאריך</label><input type="date" id="dDate" value="${esc(d.date)}"></div>
+    <div class="field"><label for="dPayer">מי שילם/ה</label><select id="dPayer">${S.members.map(m=>`<option value="${esc(m.id)}" ${m.id===d.payer?"selected":""}>${esc(m.name)}</option>`).join("")}</select></div>
+    <div class="field"><label for="dTotal">סה״כ בקבלה (לבדיקה)</label><input type="number" step="0.01" inputmode="decimal" id="dTotal" value="${d.total??""}"></div></div>
+    <div class="erow ehead"><span>פריט</span><span>כמות</span><span>מחיר שורה ₪</span><span></span></div>
+    <div id="erows" style="display:flex;flex-direction:column;gap:6px">${d.items.map((it,i)=>`<div class="erow">
+      <input type="text" id="in-${esc(it.id)}" data-i="${i}" data-f="name" value="${esc(it.name)}" placeholder="שם הפריט">
+      <input type="number" id="iq-${esc(it.id)}" data-i="${i}" data-f="qty" value="${esc(it.qty??1)}" min="0" step="any" inputmode="decimal">
+      <input type="number" id="ip-${esc(it.id)}" data-i="${i}" data-f="price" value="${esc(it.price)}" step="0.01" inputmode="decimal">
+      <button class="x" data-act="rmrow" data-i="${i}" aria-label="מחיקת שורה">×</button></div>`).join("")}</div>
+    <div class="row"><button class="btn" data-act="addrow">הוספת פריט</button></div>
+    <div class="spread"><span>סה״כ פריטים</span><b id="dSum">${money(sum)}</b></div>
+    <div id="dMismatch">${mismatchNote(d,sum)}</div>
+    <button class="btn primary big" data-act="saveDraft" ${!d.items.length?"disabled":""}>${d.editId?"שמירת שינויים":"שמירה וסימון פריטים"}</button>
+  </section>`;
+  return h;
+}
+function mismatchNote(d,sum){ const t=Number(d.total); return d.total!==""&&d.total!=null&&!isNaN(t)&&Math.abs(r2(t)-r2(sum))>0.05?`<div class="note small">חסר או עודף של ${money(Math.abs(t-sum))} לעומת הסה״כ בקבלה.</div>`:""; }
+function bindDraft(){
+  const d=S.draft;
+  const upd=()=>{ const sum=d.items.reduce((a,it)=>a+(Number(it.price)||0),0); const s=document.getElementById("dSum"); if(s) s.innerHTML=money(sum); const mm=document.getElementById("dMismatch"); if(mm) mm.innerHTML=mismatchNote(d,sum); };
+  const on=(id,f)=>{const el=document.getElementById(id); if(el) el.addEventListener("input",()=>{f(el.value);upd();});};
+  on("dStore",v=>d.store=v); on("dDate",v=>d.date=v); on("dTotal",v=>d.total=v);
+  const p=document.getElementById("dPayer"); if(p) p.addEventListener("change",()=>d.payer=p.value);
+  document.querySelectorAll("#erows input").forEach(el=>el.addEventListener("input",()=>{ d.items[+el.dataset.i][el.dataset.f]=el.value; upd(); }));
+  const fi=document.getElementById("fileIn"); if(fi) fi.addEventListener("change",()=>addFiles(fi.files));
+  const dr=document.getElementById("drop");
+  if(dr){ dr.addEventListener("dragover",e=>{e.preventDefault();dr.classList.add("over")}); dr.addEventListener("dragleave",()=>dr.classList.remove("over"));
+    dr.addEventListener("drop",e=>{e.preventDefault();dr.classList.remove("over");addFiles(e.dataTransfer.files)}); }
+}
+function addFiles(list){
+  const max=S.imgLimits?.maxCount||5;
+  for(const f of list){ if(!/^image\//.test(f.type)) continue; if(S.scan.files.length>=max){toast(`אפשר עד ${max} תמונות לקבלה`);break;} S.scan.files.push(f); S.scan.urls.push(URL.createObjectURL(f)); }
+  S.scan.msg=""; render();
+}
+function newDraft(){
+  S.scan.urls.forEach(u=>URL.revokeObjectURL(u));
+  S.scan={files:[],urls:[],busy:false,ctl:null,msg:""};
+  S.draft={editId:null,store:"",date:today(),payer:S.me,total:"",items:[]};
+  S.view="draft"; render();
+}
+
+/* split very long receipt photos into overlapping pieces so small print survives downscaling */
+async function prepImages(files, max){
+  const out=[];
+  for(const f of files){
+    let bmp=null; try{ bmp=await createImageBitmap(f,{imageOrientation:"from-image"}); }catch(e){}
+    if(!bmp || bmp.height/bmp.width<=2.2){ out.push(f); continue; }
+    const w=bmp.width, h=bmp.height, segH=Math.round(w*1.5), ov=Math.round(segH*0.1);
+    for(let y=0; y<h; ){
+      const sh=Math.min(segH,h-y); const c=document.createElement("canvas"); c.width=w; c.height=sh;
+      c.getContext("2d").drawImage(bmp,0,y,w,sh,0,0,w,sh);
+      out.push(await new Promise(res=>c.toBlob(res,"image/jpeg",0.9)));
+      if(y+sh>=h) break; y+=sh-ov;
+    }
+  }
+  return out.length<=max ? out : files.slice(0,max);
+}
+
+const PROMPT = `The images are photos of ONE supermarket receipt from Israel (mostly Hebrew). If there are several images they are consecutive parts of the same receipt from top to bottom and may overlap; do not list a line twice because it appears in two parts.
+
+Extract every purchased product line.
+- name: the product name as printed, in its original language, without barcodes or item codes. Fix obvious OCR noise only.
+- qty: the quantity or weight in units/kg as printed (1 if not shown).
+- price: the FINAL line amount in shekels for that product, after any discount lines that belong to it (lines such as "הנחה", "מבצע", "הנחת מועדון" with a minus sign, usually right under the product). A deposit line (פיקדון) belongs to the product above it; add it to that product's price.
+- A discount that cannot be tied to one product (for example a basket discount) becomes its own item with a negative price.
+- Do not include subtotal, total, VAT, payment method, change, club points or bag-count lines unless a bag was charged.
+
+Also read the store name, the purchase date, and the final total paid.
+
+Reply with only JSON in exactly this shape:
+{"store": "שופרסל דיל", "date": "2026-11-05", "total": 123.45, "items": [{"name": "חלב 3% 1 ליטר", "qty": 2, "price": 13.80}]}
+Use null for store, date or total if unreadable. Prices are numbers, not strings.`;
+
+async function readReceipt(){
+  const sc=S.scan; if(!S.sample||!sc.files.length||sc.busy) return;
+  sc.busy=true; sc.msg="מכין את התמונות…"; render();
+  const ctl=new AbortController(); sc.ctl=ctl;
+  try{
+    const imgs=await prepImages(sc.files, S.imgLimits?.maxCount||5);
+    sc.msg="Claude קורא את הקבלה… זה יכול לקחת עד דקה"; render();
+    const res=await S.sample.json(PROMPT,{images:imgs,signal:ctl.signal});
+    const items=(Array.isArray(res?.items)?res.items:[]).map(it=>({id:"i"+uid(),name:String(it?.name??"").trim(),qty:Number(it?.qty)||1,price:r2(it?.price)})).filter(it=>it.name||it.price);
+    if(!items.length){ sc.msg="לא הצלחתי לזהות פריטים. נסו תמונה חדה יותר, באור טוב, או הזינו ידנית."; }
+    else {
+      const d=S.draft; d.items=items;
+      if(res.store) d.store=String(res.store);
+      if(res.date && /^\d{4}-\d{2}-\d{2}$/.test(res.date)) d.date=res.date;
+      if(res.total!=null && !isNaN(Number(res.total))) d.total=r2(res.total);
+      sc.msg=`זוהו ${items.length} פריטים. בדקו שהכול נכון ושמרו.`;
+    }
+  }catch(e){
+    const c=e?.code;
+    sc.msg = c==="cancelled"?"" : c==="not_granted"?"לא אישרת ל-Claude לקרוא קבלות. אפשר להזין ידנית."
+      : c==="rate_limited"?"יותר מדי בקשות כרגע. נסו שוב בעוד כמה דקות."
+      : c==="image_rejected"?"אחת התמונות לא נתמכת או גדולה מדי. נסו צילום אחר."
+      : c==="invalid_json"?"התשובה לא הייתה ברורה. נסו שוב."
+      : c==="sampling_disabled"||c==="images_unavailable"?"קריאה אוטומטית לא זמינה בחשבון הזה. אפשר להזין ידנית."
+      : "משהו השתבש בקריאה. נסו שוב.";
+  }finally{ sc.busy=false; sc.ctl=null; render(); }
+}
+
+async function saveDraft(){
+  const d=S.draft;
+  const items=d.items.map(it=>({id:it.id,name:String(it.name||"").trim()||"פריט",qty:Number(it.qty)||1,price:r2(it.price)}));
+  const body={store:String(d.store||"").trim(),date:d.date||today(),payer:d.payer||S.me,items,total:d.total===""||d.total==null||isNaN(Number(d.total))?null:r2(d.total)};
+  let ok;
+  if(d.editId){
+    const old=S.receipts.find(r=>r.id===d.editId)||{};
+    const keep={}; for(const it of items) if(old.claims&&old.claims[it.id]) keep[it.id]=old.claims[it.id];
+    const {id:_omit,...rest}=old;
+    ok=await write(()=>S.db.doc("receipts/"+d.editId).set({...rest,...body,claims:keep,createdAt:old.createdAt||Date.now()}),"נשמר");
+    if(ok){ S.view="receipt"; S.openId=d.editId; }
+  } else {
+    const ref=S.db.collection("receipts").doc();
+    ok=await write(()=>ref.set({...body,claims:{},createdAt:Date.now(),by:S.me}),"הקבלה נשמרה. עכשיו כל אחד מסמן את שלו.");
+    if(ok){ S.view="receipt"; S.openId=ref.id; }
+  }
+  if(ok){ S.draft=null; render(); }
+}
+
+/* ---------- events ---------- */
+document.getElementById("tabs").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-tab]"); if(!b) return;
+  S.tab=b.dataset.tab; S.view="list"; S.confirmDel=null; render(); window.scrollTo(0,0);
+});
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("[data-act]"); if(!b||b.disabled) return;
+  const a=b.dataset.act, r=S.receipts.find(x=>x.id===S.openId);
+  switch(a){
+    case "setme": S.me=b.dataset.id; lsSet(LS_ME,S.me); render(); break;
+    case "whoami": S.me=null; lsSet(LS_ME,null); S.view="list"; render(); break;
+    case "newscan": newDraft(); break;
+    case "open": S.openId=b.dataset.id; S.view="receipt"; S.confirmDel=null; render(); window.scrollTo(0,0); break;
+    case "back": S.view="list"; S.confirmDel=null; render(); break;
+    case "claim": { if(!r) break; const cur=((r.claims||{})[b.dataset.item]||{})[b.dataset.m]===true;
+      await write(()=>S.db.doc("receipts/"+r.id).update({claims:{[b.dataset.item]:{[b.dataset.m]:!cur}}})); break; }
+    case "claimall": { if(!r) break; const all=claimantsOf(r,b.dataset.item).length===S.members.length; const m={}; S.members.forEach(x=>m[x.id]=!all);
+      await write(()=>S.db.doc("receipts/"+r.id).update({claims:{[b.dataset.item]:m}})); break; }
+    case "splitrest": { if(!r) break; const c={}; for(const it of r.items||[]) if(!claimantsOf(r,it.id).length){ c[it.id]={}; S.members.forEach(x=>c[it.id][x.id]=true); }
+      await write(()=>S.db.doc("receipts/"+r.id).update({claims:c}),"חולק בין כולם"); break; }
+    case "edit": if(!r) break; S.draft={editId:r.id,store:r.store||"",date:r.date||today(),payer:r.payer,total:r.total??"",items:(r.items||[]).map(it=>({...it}))}; S.view="draft"; render(); break;
+    case "del": S.confirmDel=S.openId; render(); break;
+    case "delno": S.confirmDel=null; render(); break;
+    case "delyes": { const id=S.confirmDel; S.confirmDel=null; if(await write(()=>S.db.doc("receipts/"+id).delete(),"הקבלה נמחקה")){ S.view="list"; render(); } break; }
+    case "paid": await write(()=>S.db.collection("payments").add({from:b.dataset.from,to:b.dataset.to,amount:r2(b.dataset.amount),date:today(),createdAt:Date.now()}),"נרשם התשלום"); break;
+    case "unpay": await write(()=>S.db.doc("payments/"+b.dataset.id).delete(),"התשלום בוטל"); break;
+    case "editmembers": S.editingMembers=S.members.map(m=>({...m})); S.view="members"; render(); break;
+    case "madd": { const used=new Set(S.editingMembers.map(m=>m.color%6)); let c=0; while(used.has(c)&&c<5) c++; syncMemberInputs(); S.editingMembers.push({id:"m"+uid(),name:"",color:c}); render(); break; }
+    case "mdel": syncMemberInputs(); S.editingMembers.splice(+b.dataset.i,1); render(); break;
+    case "mcancel": S.editingMembers=null; S.view="list"; render(); break;
+    case "msave": { syncMemberInputs(); const list=S.editingMembers.map(m=>({id:m.id,name:m.name.trim(),color:m.color})).filter(m=>m.name);
+      if(list.length<2){ toast("צריך לפחות שני שותפים"); break; }
+      if(await write(()=>S.db.doc("house/main").set({members:list}),"נשמר")){ S.editingMembers=null; S.view="list"; render(); } break; }
+    case "read": readReceipt(); break;
+    case "stop": S.scan.ctl?.abort(); break;
+    case "clearimg": S.scan.urls.forEach(u=>URL.revokeObjectURL(u)); S.scan.files=[]; S.scan.urls=[]; S.scan.msg=""; render(); break;
+    case "addrow": S.draft.items.push({id:"i"+uid(),name:"",qty:1,price:""}); render(); { const last=S.draft.items[S.draft.items.length-1]; document.getElementById("in-"+last.id)?.focus(); } break;
+    case "rmrow": S.draft.items.splice(+b.dataset.i,1); render(); break;
+    case "cancelDraft": { const ed=S.draft?.editId; S.draft=null; S.scan.ctl?.abort(); S.view=ed?"receipt":"list"; render(); break; }
+    case "saveDraft": b.disabled=true; await saveDraft(); break;
+  }
+});
+document.addEventListener("change",e=>{
+  if(e.target.id==="payerSel"){ const r=S.receipts.find(x=>x.id===S.openId); if(r) write(()=>S.db.doc("receipts/"+r.id).update({payer:e.target.value}),"עודכן מי שילם"); }
+});
+document.addEventListener("input",e=>{ if(e.target.dataset.mi!=null && S.editingMembers){ S.editingMembers[+e.target.dataset.mi].name=e.target.value; } });
+function syncMemberInputs(){ document.querySelectorAll("[data-mi]").forEach(el=>{ if(S.editingMembers[+el.dataset.mi]) S.editingMembers[+el.dataset.mi].name=el.value; }); }
+
+/* data updates must not wipe a form someone is typing in */
+function onData(){ if(S.view==="draft"||(S.view==="members"&&S.members.length)) return; render(); }
+
+/* ---------- boot ---------- */
+render();
+(async()=>{
+  const cl=window.claude;
+  if(!cl||typeof cl.use!=="function"){ S.failed=true; render(); return; }
+  const db=await cl.use("db");
+  if(!db){ S.failed=true; render(); return; }
+  S.db=db;
+  const slowT=setTimeout(()=>{ S.slow=true; if(!S.got.house) render(); },10000);
+  db.doc("house/main").onSnapshot(snap=>{
+    S.members=(snap.data()?.members)||[]; S.got.house=true; if(!snap.metadata.fromCache) clearTimeout(slowT);
+    const wasEmptyOnboard = S.view==="members" && !S.members.length;
+    if(S.view==="members" && S.members.length && S.editingMembers && S.editingMembers.every(m=>!m.name)){ S.view="list"; S.editingMembers=null; }
+    if(wasEmptyOnboard) render(); else onData();
+  },()=>{ S.got.house=true; clearTimeout(slowT); render(); });
+  db.collection("receipts").orderBy("createdAt","desc").onSnapshot(snap=>{
+    S.receipts=snap.docs.map(d=>({id:d.id,...d.data()})); S.got.receipts=true; onData();
+  },()=>{});
+  db.collection("payments").onSnapshot(snap=>{
+    S.payments=snap.docs.map(d=>({id:d.id,...d.data()})); onData();
+  },()=>{});
+  try{ const u=await cl.use("user"); const w=u? await u.can("data.write"):null; if(w===false){ S.readOnly=true; render(); } }catch(e){}
+  try{
+    const sm=await cl.use("sample");
+    if(sm){ S.sample=sm; const lim=await sm.limits().catch(()=>null); S.imgLimits=lim?.images||null; if(S.view==="draft") render(); }
+  }catch(e){}
+})();
+})();
+</script>
